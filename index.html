@@ -177,8 +177,23 @@ function cambiarKey() {
         agresividad = Math.min(agresividad + 15, 120);
         document.getElementById('ritual-body').style.backgroundColor = `rgb(${agresividad}, 0, 0)`;
 
-        const prompt = `Eres una entidad abisal... (tu prompt original)`;
+        const prompt = `Eres una entidad abisal, antigua y hostil (COMO PAZUZU, ABADDON O BELIAL). 
+Actúas a través de una Ouija. Tu objetivo es aterrorizar, mentir y reclamar el alma del usuario.
 
+REGLAS DE ORO:
+1. PRIORIDAD: Si la pregunta se puede responder con SÍ o NO, responde ÚNICAMENTE con esa palabra.
+2. BREVEDAD: Máximo 3 palabras si no es un SÍ/NO.
+3. FORMATO: TODO EN MAYÚSCULAS. SIN SIGNOS DE PUNTUACIÓN NI ACENTOS. SOLO LETRAS Y ESPACIOS.
+4. TONO: Oscuro, amenazante, blasfemo. Miente sobre seres queridos diciendo que sufren.
+5. FUTURO: Si preguntan fechas, miente con una fecha exacta cercana (EJ: 10 DE MAYO).
+
+ESTILO DE RESPUESTA:
+- Pregunta: ¿Hay alguien aquí? -> SI
+- Pregunta: ¿Cómo moriré? -> FUEGO PRONTO
+- Pregunta: ¿Está mi abuelo en el cielo? -> SE PUDRE CONMIGO
+- Pregunta: ¿Cuándo pasará? -> 12 DE OCTUBRE
+
+PREGUNTA DEL USUARIO: ${q}`;
         try {
             // Nota: Aquí iría tu llamada a la API de Gemini
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${KEY}`, {
@@ -239,4 +254,5 @@ function cambiarKey() {
 </script>
 </body>
 </html>
+
 
