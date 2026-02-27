@@ -118,11 +118,17 @@ function cambiarKey() {
     // --- SISTEMA DE AUDIO ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    function sonidoMadera() {
-        // Reproduce el archivo .opus de movimiento
-        audioMovimiento.currentTime = 0; // Reinicia para permitir clics rápidos
-        audioMovimiento.play().catch(e => console.log("Error audio mov:", e));
-    }
+function sonidoMadera() {
+    audioMovimiento.currentTime = 0; 
+    audioMovimiento.play();
+
+    // Detener el audio automáticamente a los 800ms (0.8 segundos)
+    setTimeout(() => {
+        audioMovimiento.pause();
+        audioMovimiento.currentTime = 0;
+    }, 800); 
+}
+
 
     function sonidoTrueno() {
         // Mantenemos el trueno sintético por su efecto dinámico
@@ -254,5 +260,6 @@ PREGUNTA DEL USUARIO: ${q}`;
 </script>
 </body>
 </html>
+
 
 
