@@ -93,7 +93,22 @@
 <div class="history" id="historial"></div>
 
 <script>
-    const KEY = 'AIzaSyAjVWzHAoPl0XEd2grb31R9gnA0uHkzBvQ';
+    // --- CONFIGURACIÓN DE SEGURIDAD ---
+let KEY = localStorage.getItem('ouija_api_key');
+
+if (!KEY || KEY.length < 10) {
+    KEY = prompt("Introduce tu nueva API KEY de Gemini (Google la bloqueó en GitHub por seguridad):");
+    if (KEY) {
+        localStorage.setItem('ouija_api_key', KEY);
+    }
+}
+
+// Función para cambiar la clave si te equivocas
+function cambiarKey() {
+    localStorage.removeItem('ouija_api_key');
+    location.reload();
+}
+
     const grid = document.getElementById('grid-letras');
     const audioAmbiente = document.getElementById('audio-ambiente');
     const audioMovimiento = document.getElementById('audio-movimiento');
@@ -224,3 +239,4 @@
 </script>
 </body>
 </html>
+
