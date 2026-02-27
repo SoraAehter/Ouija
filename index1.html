@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUIJA | Posesión Demoníaca</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { --sangre: #8b0000; --oro: #d4af37; --madera: #1a0f09; }
+        body { 
+            background: #000; color: #fff; font-family: 'Cinzel', serif;
+            margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            transition: background 5s ease;
+        }
+
+        #ritual-start {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 100; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+        }
+
+        .ouija-board {
+            width: 100%; max-width: 450px; height: 320px;
+            background: var(--madera); border: 2px solid var(--sangre);
+            border-radius: 15px; position: relative;
+            background-image: url('https://www.transparenttextures.com/patterns/dark-wood.png');
+            display: flex; flex-direction: column; align-items: center; justify-content: space-around;
+            padding: 15px; box-sizing: border-box; overflow: hidden;
+            box-shadow: 0 0 20px rgba(139, 0, 0, 0.4);
+        }
+
+        .row-options { width: 100%; display: flex; justify-content: space-between; padding: 0 30px; font-size: 1.4rem; color: var(--oro); text-shadow: 0 0 5px #000; }
+        .letters-grid { 
+            display: grid; grid-template-columns: repeat(13, 1fr); 
+            gap: 2px; width: 100%; text-align: center; color: rgba(212, 175, 55, 0.7); 
+            font-size: 0.8rem; margin: 10px 0;
+        }
+        .numbers { font-size: 0.9rem; letter-spacing: 8px; opacity: 0.8; color: var(--oro); }
+        .goodbye { font-size: 1.5rem; color: var(--sangre); margin-top: 5px; text-shadow: 0 0 10px var(--sangre); }
+
+        #planchette {
+            position: absolute; width: 50px; height: 65px;
+            background: rgba(224, 201, 166, 0.7); clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            transition: all 0.7s cubic-bezier(0.5, 0, 0.5, 1); z-index: 10;
+            pointer-events: none; border: 1px solid #000;
+        }
+        #planchette::after { content: ''; width: 18px; height: 18px; background: rgba(0,0,0,0.8); border-radius: 50%; position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); }
+
+        .controls { width: 100%; max-width: 450px; margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        input { background: #050505; border: 1px solid var(--sangre); color: #ff0000; padding: 12px; font-family: serif; font-size: 1rem; text-align: center; }
+        button { background: var(--sangre); color: #fff; border: none; padding: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
+        .btn-secondary { background: #222; font-size: 0.8rem; padding: 8px; }
+
+        .history { width: 100%; max-width: 450px; margin-top: 20px; font-family: serif; font-size: 0.95rem; max-height: 200px; overflow-y: auto; border-top: 1px solid var(--sangre); padding-top: 10px; }
+        .entry { margin-bottom: 12px; border-left: 3px solid var(--sangre); padding-left: 10px; animation: flicker 0.2s infinite alternate; }
+        .s-demon { color: #ff0000; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+
+        @keyframes flicker { from { opacity: 0.8; } to { opacity: 1; } }
+    </style>
+</head>
+<body id="ritual-body">
+
+<audio id="audio-ambiente" loop>
+    <source src="musica1.opus" type="audio/ogg">
+</audio>
+<audio id="audio-movimiento">
+    <source src="sonido_movimiento.opus" type="audio/ogg">
+</audio>
+
+<div id="ritual-start">
+    <h1 style="color:var(--sangre); letter-spacing: 5px;">¿DESEAS HABLAR CON ELLOS?</h1>
+    <button onclick="comenzarRitual()">SÍ, ACEPTO LAS CONSECUENCIAS</button>
+</div>
+
+<div class="ouija-board" id="board">
+    <div class="row-options">
+        <span id="target-SI">SÍ</span>
+        <span id="target-NO">NO</span>
+    </div>
+    <div class="letters-grid" id="grid-letras"></div>
+    <div class="numbers" id="target-NUMS">0123456789</div>
+    <div class="goodbye" id="target-BYE">ADIÓS</div>
+    <div id="planchette"></div>
+</div>
+
+<div class="controls">
+    <input type="text" id="pregunta" placeholder="Haz tu pregunta al más allá...">
+    <button onclick="invocar()" id="btn">Provocar</button>
+    <button onclick="toggleMute()" id="btn-mute" class="btn-secondary">Silenciar Música</button>
+</div>
+
+<div class="history" id="historial"></div>
+
+<script>
+    const KEY = 'AIzaSyAjVWzHAoPl0XEd2grb31R9gnA0uHkzBvQ';
+    const grid = document.getElementById('grid-letras');
+    const audioAmbiente = document.getElementById('audio-ambiente');
+    const audioMovimiento = document.getElementById('audio-movimiento');
+    let agresividad = 0;
+    let isMuted = false;
+
+    // --- SISTEMA DE AUDIO ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function sonidoMadera() {
+        // Reproduce el archivo .opus de movimiento
+        audioMovimiento.currentTime = 0; // Reinicia para permitir clics rápidos
+        audioMovimiento.play().catch(e => console.log("Error audio mov:", e));
+    }
+
+    function sonidoTrueno() {
+        // Mantenemos el trueno sintético por su efecto dinámico
+        const bufferSize = audioCtx.sampleRate * 2;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(400, audioCtx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 1.5);
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start();
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        audioAmbiente.muted = isMuted;
+        document.getElementById('btn-mute').innerText = isMuted ? "Activar Música" : "Silenciar Música";
+    }
+
+    // --- INICIALIZACIÓN ---
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(l => {
+        const s = document.createElement('span');
+        s.innerText = l; s.id = `target-${l}`; grid.appendChild(s);
+    });
+
+    function comenzarRitual() {
+        document.getElementById('ritual-start').style.display = 'none';
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        // Iniciar música de fondo .opus
+        audioAmbiente.volume = 0.5;
+        audioAmbiente.play().catch(e => console.log("Interacción requerida"));
+    }
+
+    // --- LÓGICA DE LA OUIJA ---
+    async function invocar() {
+        const qInput = document.getElementById('pregunta');
+        const q = qInput.value.trim();
+        if(!q) return;
+        qInput.value = "";
+        document.getElementById('btn').disabled = true;
+
+        agresividad = Math.min(agresividad + 15, 120);
+        document.getElementById('ritual-body').style.backgroundColor = `rgb(${agresividad}, 0, 0)`;
+
+        const prompt = `Eres una entidad abisal... (tu prompt original)`;
+
+        try {
+            // Nota: Aquí iría tu llamada a la API de Gemini
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await res.json();
+            let resp = data.candidates[0].content.parts[0].text.toUpperCase().replace(/[^A-Z ]/g, "").trim();
+
+            if(!resp) resp = "TU ALMA ME PERTENECE";
+
+            if(resp === "SI" || resp === "SÍ") moverA("target-SI", () => finalizar(q, "SI"));
+            else if(resp === "NO") moverA("target-NO", () => finalizar(q, "NO"));
+            else deletrear(resp, q);
+
+        } catch (e) { 
+            document.getElementById('btn').disabled = false; 
+        }
+    }
+
+    function deletrear(texto, q) {
+        const chars = texto.replace(/\s/g, "").split("");
+        let i = 0;
+        const timer = setInterval(() => {
+            if(i >= chars.length) { 
+                clearInterval(timer); 
+                setTimeout(() => finalizar(q, texto), 800); 
+                return; 
+            }
+            moverA(`target-${chars[i]}`);
+            i++;
+        }, 1000);
+    }
+
+    function moverA(id, callback) {
+        const target = document.getElementById(id);
+        if(!target) return;
+
+        sonidoMadera(); // Ahora suena el archivo sonido_movimiento.opus
+
+        const board = document.getElementById('board').getBoundingClientRect();
+        const rect = target.getBoundingClientRect();
+        const p = document.getElementById('planchette');
+        
+        p.style.left = `${rect.left - board.left + (rect.width/2)}px`;
+        p.style.top = `${rect.top - board.top + (rect.height/2)}px`;
+        
+        if(callback) setTimeout(callback, 800);
+    }
+
+    function finalizar(q, s) {
+        sonidoTrueno();
+        const h = document.getElementById('historial');
+        h.innerHTML = `<div class="entry">Tú: ${q}<br><span class="s-demon">ENTIDAD:</span> ${s}</div>` + h.innerHTML;
+        document.getElementById('btn').disabled = false;
+    }
+</script>
+</body>
+</html>
